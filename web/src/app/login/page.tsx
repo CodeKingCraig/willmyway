@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense, FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -196,5 +196,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f6f8fb]" />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
