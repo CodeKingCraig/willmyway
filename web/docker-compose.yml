@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: willmyway-postgres-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: willmyway
+      POSTGRES_PASSWORD: willmyway_password
+      POSTGRES_DB: willmyway_dev
+    ports:
+      - "5434:5432"
+    volumes:
+      - willmyway_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U willmyway -d willmyway_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  willmyway_postgres_data:
