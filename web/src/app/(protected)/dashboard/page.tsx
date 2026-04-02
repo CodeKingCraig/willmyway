@@ -102,7 +102,7 @@ export default async function DashboardPage() {
               <div className="flex items-start gap-4">
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/80 ring-1 ring-white/80 shadow-sm backdrop-blur">
                   <img
-                    src="/luma.png"
+                    src="/Luma.png"
                     alt="Luma"
                     className="h-8 w-8 object-contain"
                   />
