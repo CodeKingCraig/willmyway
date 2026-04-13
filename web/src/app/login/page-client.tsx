@@ -5,12 +5,17 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
+type UserRole = "OWNER" | "WITNESS" | "ADMIN";
+
 type ApiError = {
   error?: string;
   message?: string;
   code?: string;
-  role?: "OWNER" | "WITNESS" | "ADMIN";
+  role?: UserRole;
   success?: boolean;
+  user?: {
+    role?: UserRole;
+  };
 };
 
 function getErrorMessage(payload: unknown, fallback: string) {
@@ -27,8 +32,9 @@ function getErrorCode(payload: unknown) {
 
 function getRole(payload: unknown) {
   if (!payload || typeof payload !== "object") return null;
+
   const p = payload as ApiError;
-  return p.role || null;
+  return p.role || p.user?.role || null;
 }
 
 function EyeIcon({ open }: { open: boolean }) {
@@ -170,7 +176,9 @@ export default function LoginPageClient() {
       const payload: unknown = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(getErrorMessage(payload, "Could not resend verification email."));
+        setError(
+          getErrorMessage(payload, "Could not resend verification email.")
+        );
         setResendLoading(false);
         return;
       }
@@ -216,9 +224,12 @@ export default function LoginPageClient() {
               </div>
 
               <div className="mb-6 rounded-3xl bg-white/80 p-5 text-sm leading-6 text-slate-600 shadow-sm ring-1 ring-white/80">
-                <div className="font-semibold text-slate-900">Hi again, I’m Luma.</div>
+                <div className="font-semibold text-slate-900">
+                  Hi again, I’m Luma.
+                </div>
                 <div className="mt-2">
-                  Let’s get you back into your will and continue where you left off.
+                  Let’s get you back into your will and continue where you left
+                  off.
                 </div>
               </div>
             </div>
