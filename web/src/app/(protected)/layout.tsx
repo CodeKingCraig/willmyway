@@ -1,16 +1,20 @@
-import AppHeader from "@/components/AppHeader";
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/session";
 
-export default function ProtectedLayout({
+export default async function ProtectedLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
-  return (
-    <>
-      <AppHeader myWillHref="/dashboard" />
-      <div className="min-h-screen bg-gray-50">
-        {children}
-      </div>
-    </>
-  );
+}>) {
+  const user = await getSessionUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  if (!user.emailVerified) {
+    redirect(`/login?email=${encodeURIComponent(user.email)}&verified=expired`);
+  }
+
+  return <>{children}</>;
 }

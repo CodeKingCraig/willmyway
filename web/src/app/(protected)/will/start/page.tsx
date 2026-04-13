@@ -8,6 +8,10 @@ export default async function WillStartPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
+  if (!user.onboardingCompleted) {
+    redirect("/onboarding");
+  }
+
   const draftState = await getDraftStateByUserId(user.id);
 
   if (draftState.exists) {
@@ -41,7 +45,8 @@ export default async function WillStartPage() {
       <section className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-2xl font-semibold text-slate-800">Wizard Start</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Start the wizard to create your first draft. Your progress saves as you go.
+          Start the wizard to create your first draft. Your progress saves as
+          you go.
         </p>
 
         <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">

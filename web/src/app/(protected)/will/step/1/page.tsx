@@ -7,6 +7,10 @@ export default async function WillStep1Page() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
+  if (!user.onboardingCompleted) {
+    redirect("/onboarding");
+  }
+
   return (
     <main className="min-h-screen bg-[#f6f8fb]">
       <section className="relative overflow-hidden">

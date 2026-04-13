@@ -6,6 +6,9 @@ import Step2BeneficiariesForm from "./step2-beneficiaries-form";
 export default async function WillStep2Page() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (!user.onboardingCompleted) {
+  redirect("/onboarding");
+}
 
   return (
     <main className="min-h-screen bg-[#f6f8fb]">

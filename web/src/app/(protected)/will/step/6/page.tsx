@@ -7,6 +7,9 @@ import Step6FinalReview from "./step6-final-review";
 export default async function WillStep6Page() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (!user.onboardingCompleted) {
+  redirect("/onboarding");
+}
 
   const draftState = await getDraftStateByUserId(user.id);
 

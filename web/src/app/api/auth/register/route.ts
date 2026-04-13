@@ -1,8 +1,10 @@
 export const runtime = "nodejs";
 
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -28,21 +30,52 @@ export async function POST(req: Request) {
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json({ error: "User already exists." }, { status: 409 });
+      return NextResponse.json(
+        { error: "User already exists." },
+        { status: 409 }
+      );
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const verificationToken = randomBytes(32).toString("hex");
+    const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
         fullName: fullName || null,
+        emailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiresAt: verificationExpiresAt,
       },
-      select: { id: true, email: true, fullName: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        createdAt: true,
+      },
     });
 
-    return NextResponse.json({ success: true, user });
+    let emailSent = false;
+
+    try {
+      await sendVerificationEmail({
+        to: email,
+        fullName: fullName || null,
+        token: verificationToken,
+      });
+      emailSent = true;
+    } catch (emailErr) {
+      console.error("REGISTER_EMAIL_SEND_ERROR:", emailErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      requiresVerification: true,
+      emailSent,
+      user,
+    });
   } catch (err) {
     console.error("REGISTER_ERROR:", err);
     return NextResponse.json({ error: "Server error." }, { status: 500 });

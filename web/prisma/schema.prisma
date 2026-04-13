@@ -7,15 +7,32 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  passwordHash String
-  role         UserRole      @default(OWNER)
-  fullName     String?
-  draft        WillDraft?
-  legacyVideos LegacyVideo[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                         String        @id @default(cuid())
+  email                      String        @unique
+  passwordHash               String
+  role                       UserRole      @default(OWNER)
+  fullName                   String?
+  emailVerified              Boolean       @default(false)
+  emailVerificationToken     String?       @unique
+  emailVerificationExpiresAt DateTime?
+  passwordResetToken         String?       @unique
+  passwordResetExpiresAt     DateTime?
+
+  onboardingCompleted        Boolean       @default(false)
+  onboardingAnswers          Json?
+  onboardingCompletedAt      DateTime?
+
+  basePlan                   BasePlan      @default(ESSENTIAL)
+  careActive                 Boolean       @default(false)
+  careStartedAt              DateTime?
+  careEndsAt                 DateTime?
+  careStatus                 CareStatus    @default(NOT_ACTIVE)
+
+  draft                      WillDraft?
+  legacyVideos               LegacyVideo[]
+
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
 }
 
 model WillDraft {
@@ -23,7 +40,7 @@ model WillDraft {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  status    String   @default("DRAFT") // DRAFT | LOCKED
+  status    String   @default("DRAFT")
   step      Int      @default(1)
   data      Json     @default("{}")
 
@@ -56,4 +73,18 @@ enum UserRole {
   OWNER
   WITNESS
   ADMIN
+}
+
+enum BasePlan {
+  ESSENTIAL
+  LEGACY
+  FAMILY_VAULT
+  FULL
+}
+
+enum CareStatus {
+  NOT_ACTIVE
+  ACTIVE
+  CANCELLED
+  EXPIRED
 }

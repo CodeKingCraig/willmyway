@@ -10,10 +10,52 @@ type ApiError = {
   message?: string;
 };
 
+type RegisterSuccess = {
+  success?: boolean;
+  requiresVerification?: boolean;
+  emailSent?: boolean;
+};
+
 function getErrorMessage(payload: unknown, fallback: string) {
   if (!payload || typeof payload !== "object") return fallback;
   const p = payload as ApiError;
   return p.error || p.message || fallback;
+}
+
+function EyeIcon({ open }: { open: boolean }) {
+  if (open) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path d="M3 3l18 18" />
+        <path d="M10.58 10.58a2 2 0 102.83 2.83" />
+        <path d="M9.88 4.24A10.94 10.94 0 0112 4c5.05 0 9.27 3.11 10.5 8a10.96 10.96 0 01-4.04 5.94" />
+        <path d="M6.61 6.61A10.95 10.95 0 001.5 12c1.23 4.89 5.45 8 10.5 8 1.68 0 3.28-.35 4.73-.98" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <path d="M1.5 12S5.73 4 12 4s10.5 8 10.5 8-4.23 8-10.5 8S1.5 12 1.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
 }
 
 export default function RegisterPage() {
@@ -23,6 +65,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +89,12 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/login");
+      const data = (payload || {}) as RegisterSuccess;
+      const emailSent = data.emailSent ? "1" : "0";
+
+      router.push(
+        `/verify-email?email=${encodeURIComponent(email)}&emailSent=${emailSent}`
+      );
       router.refresh();
     } catch {
       setError("Network error. Try again.");
@@ -60,8 +108,7 @@ export default function RegisterPage() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         <div className="grid w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/70 bg-white/70 shadow-[0_25px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl md:grid-cols-2">
-          {/* LEFT SIDE */}
-          <section className="hidden md:flex flex-col justify-between bg-gradient-to-br from-[#edf4f1] via-[#f6faf8] to-[#eef3fb] p-10">
+          <section className="hidden flex-col justify-between bg-gradient-to-br from-[#edf4f1] via-[#f6faf8] to-[#eef3fb] p-10 md:flex">
             <div>
               <div className="inline-flex items-center rounded-full border border-[#d8e4de] bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 WillMyWay
@@ -80,7 +127,7 @@ export default function RegisterPage() {
             <div className="mt-10 flex items-end gap-6">
               <div className="relative h-[220px] w-[180px] shrink-0">
                 <Image
-                  src="/Luma.png"
+                  src="/luma.png"
                   alt="Luma"
                   fill
                   className="object-contain drop-shadow-[0_18px_35px_rgba(108,140,132,0.22)]"
@@ -97,20 +144,19 @@ export default function RegisterPage() {
             </div>
           </section>
 
-          {/* RIGHT SIDE */}
           <section className="flex flex-col justify-center p-6 sm:p-8 md:p-10">
             <div className="mx-auto w-full max-w-md">
-              {/* MOBILE LUMA */}
               <div className="mb-6 flex flex-col items-center text-center md:hidden">
                 <div className="relative h-28 w-24">
                   <Image
-                    src="/Luma.png"
+                    src="/luma.png"
                     alt="Luma"
                     fill
                     className="object-contain"
                     priority
                   />
                 </div>
+
                 <div className="mt-3 text-sm font-medium uppercase tracking-[0.2em] text-slate-400">
                   WillMyWay
                 </div>
@@ -156,13 +202,26 @@ export default function RegisterPage() {
                   <label className="mb-2 block text-sm font-medium text-slate-700">
                     Password
                   </label>
-                  <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type="password"
-                    required
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#7b95bb] focus:ring-4 focus:ring-[#7b95bb]/15"
-                  />
+
+                  <div className="relative">
+                    <input
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      type={showPassword ? "text" : "password"}
+                      required
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-12 outline-none focus:border-[#7b95bb] focus:ring-4 focus:ring-[#7b95bb]/15"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showPassword}
+                    >
+                      <EyeIcon open={showPassword} />
+                    </button>
+                  </div>
                 </div>
 
                 {error ? (

@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAuthToken } from "@/lib/auth";
+import { getSessionUser } from "@/lib/session";
 import { Prisma } from "@prisma/client";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function getUserIdFromRequest(req: NextRequest) {
-  const token = req.cookies.get("auth_token")?.value;
-  if (!token) return null;
-
-  const payload = verifyAuthToken(token);
-  if (!payload?.userId) return null;
-
-  return payload.userId as string;
 }
 
 type DraftStatus = "DRAFT" | "LOCKED";
@@ -25,14 +15,47 @@ type PatchBody = {
   status?: DraftStatus;
 };
 
-export async function GET(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+async function requireSessionUser() {
+  const user = await getSessionUser();
+
+  if (!user) {
+    return {
+      user: null,
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+
+  if (!user.emailVerified) {
+    return {
+      user: null,
+      response: NextResponse.json(
+        { error: "EMAIL_NOT_VERIFIED" },
+        { status: 403 }
+      ),
+    };
+  }
+
+  if (!user.onboardingCompleted) {
+    return {
+      user: null,
+      response: NextResponse.json(
+        { error: "ONBOARDING_INCOMPLETE" },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return { user, response: null };
+}
+
+export async function GET(_req: NextRequest) {
+  const { user, response } = await requireSessionUser();
+  if (!user) {
+    return response!;
   }
 
   const draft = await prisma.willDraft.findUnique({
-    where: { userId },
+    where: { userId: user.id },
     select: {
       id: true,
       userId: true,
@@ -51,27 +74,32 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ ok: true, draft }, { status: 200 });
 }
 
-export async function POST(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(_req: NextRequest) {
+  const { user, response } = await requireSessionUser();
+  if (!user) {
+    return response!;
   }
 
   const existing = await prisma.willDraft.findUnique({
-    where: { userId },
+    where: { userId: user.id },
     select: { id: true, step: true, status: true },
   });
 
   if (existing) {
     return NextResponse.json(
-      { ok: true, draftId: existing.id, step: existing.step, status: existing.status },
+      {
+        ok: true,
+        draftId: existing.id,
+        step: existing.step,
+        status: existing.status,
+      },
       { status: 200 }
     );
   }
 
   const created = await prisma.willDraft.create({
     data: {
-      userId,
+      userId: user.id,
       status: "DRAFT",
       step: 1,
       data: {} as Prisma.InputJsonValue,
@@ -80,15 +108,20 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(
-    { ok: true, draftId: created.id, step: created.step, status: created.status },
+    {
+      ok: true,
+      draftId: created.id,
+      step: created.step,
+      status: created.status,
+    },
     { status: 201 }
   );
 }
 
 export async function PATCH(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { user, response } = await requireSessionUser();
+  if (!user) {
+    return response!;
   }
 
   const body: unknown = await req.json().catch(() => null);
@@ -118,7 +151,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const existing = await prisma.willDraft.findUnique({
-    where: { userId },
+    where: { userId: user.id },
     select: { id: true, data: true, step: true, status: true },
   });
 
@@ -126,12 +159,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Draft not found" }, { status: 404 });
   }
 
-  // If draft is locked, block edits unless explicitly unlocking to DRAFT
   const isLocked = existing.status === "LOCKED";
   const isUnlocking = status === "DRAFT";
 
   if (isLocked && !isUnlocking) {
-    // Allow "no-op" PATCH? We block any attempt to modify step/data while locked.
     if (step !== undefined || data !== undefined || status === "LOCKED") {
       return NextResponse.json(
         { error: "Draft is locked. Unlock to edit." },
@@ -148,10 +179,11 @@ export async function PATCH(req: NextRequest) {
       : {};
 
   const nextStep: number = step !== undefined ? step : existing.step;
-  const nextStatus: DraftStatus = status !== undefined ? status : (existing.status as DraftStatus);
+  const nextStatus: DraftStatus =
+    status !== undefined ? status : (existing.status as DraftStatus);
 
   const updated = await prisma.willDraft.update({
-    where: { userId },
+    where: { userId: user.id },
     data: {
       data: nextDataObj as Prisma.InputJsonValue,
       step: nextStep,

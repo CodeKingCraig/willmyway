@@ -6,6 +6,9 @@ import Step3ExecutorsForm from "./step3-executors-form";
 export default async function WillStep3Page() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (!user.onboardingCompleted) {
+  redirect("/onboarding");
+}
 
   return (
     <main className="min-h-screen bg-[#f6f8fb]">

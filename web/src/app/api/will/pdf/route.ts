@@ -4,7 +4,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
 
-import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib";
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  type PDFPage,
+  type PDFFont,
+} from "pdf-lib";
 
 type Asset = {
   id: string;
@@ -51,7 +57,6 @@ type PersonalDetails = {
   city?: string;
   province?: string;
   postalCode?: string;
-
   maritalStatus?: string;
   spouseFullName?: string;
   spouseIdNumber?: string;
@@ -82,13 +87,19 @@ function safeNumber(v: unknown): number | undefined {
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
 }
 
-function getUserFieldString(user: unknown, key: "fullName" | "email"): string | undefined {
+function getUserFieldString(
+  user: unknown,
+  key: "fullName" | "email"
+): string | undefined {
   if (!isObject(user)) return undefined;
   return safeString(user[key]);
 }
 
 function formatZAR(value: number) {
-  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(value);
+  return new Intl.NumberFormat("en-ZA", {
+    style: "currency",
+    currency: "ZAR",
+  }).format(value);
 }
 
 function safeDateFromUnknown(input: unknown): Date | null {
@@ -116,7 +127,11 @@ function safeDateFromUnknown(input: unknown): Date | null {
 
 function formatDateZA(d: Date) {
   if (!Number.isFinite(d.getTime())) return "—";
-  return d.toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "2-digit" });
+  return d.toLocaleDateString("en-ZA", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
 }
 
 /**
@@ -125,47 +140,43 @@ function formatDateZA(d: Date) {
  * and strips characters outside a safe WinAnsi-ish subset.
  */
 function sanitizeWinAnsi(input: string): string {
-  // 1) Normalize line endings + remove control chars (except \n and \t)
   let s = input.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
 
-  // 2) Replace common problematic Unicode with ASCII equivalents
   const replacements: Array<[RegExp, string]> = [
-    [/[\u2018\u2019\u201A\u201B]/g, "'"], // single quotes
-    [/[\u201C\u201D\u201E\u201F]/g, '"'], // double quotes
-    [/[\u2013\u2014\u2212]/g, "-"], // en dash, em dash, minus
-    [/\u2026/g, "..."], // ellipsis
-    [/\u00A0/g, " "], // non-breaking space
-    [/\u2022/g, "*"], // bullet (we draw our own bullet anyway)
-    [/\u00B7/g, "*"], // middle dot
-    [/\u00D7/g, "x"], // multiplication
-    [/\u00F7/g, "/"], // division
-    [/\u2264/g, "<="], // ≤
-    [/\u2265/g, ">="], // ≥
-    [/\u2260/g, "!="], // ≠
-    [/\u2248|\u2249|\u224A|\u224B|\u224C|\u224D|\u224E|\u224F|\u2250|\u2251|\u2252|\u2253|\u2254|\u2255|\u2256|\u2257|\u2258|\u2259|\u225A|\u225B|\u225C|\u225D|\u225E|\u225F/g, "~"], // approx family
-    [/\u2248|\u2243|\u2245|\u2247|\u2246|\u2242|\u2241|\u2240|\u223C|\u223D/g, "~"], // more approx/tilde-like
-    [/\u2248/g, "~"], // ≈
-    [/\u20AC/g, "EUR"], // €
-    [/\u00A3/g, "GBP"], // £ (usually safe but keep consistent)
-    [/\u00A5/g, "JPY"], // ¥
-    [/\u2122/g, "TM"], // ™
-    [/\u00AE/g, "(R)"], // ®
-    [/\u00A9/g, "(C)"], // ©
-    [/\u2192/g, "->"], // →
-    [/\u2190/g, "<-"], // ←
-    [/\u2020/g, "+"], // dagger
-    [/\u2021/g, "++"], // double dagger
+    [/[\u2018\u2019\u201A\u201B]/g, "'"],
+    [/[\u201C\u201D\u201E\u201F]/g, '"'],
+    [/[\u2013\u2014\u2212]/g, "-"],
+    [/\u2026/g, "..."],
+    [/\u00A0/g, " "],
+    [/\u2022/g, "*"],
+    [/\u00B7/g, "*"],
+    [/\u00D7/g, "x"],
+    [/\u00F7/g, "/"],
+    [/\u2264/g, "<="],
+    [/\u2265/g, ">="],
+    [/\u2260/g, "!="],
+    [
+      /\u2248|\u2249|\u224A|\u224B|\u224C|\u224D|\u224E|\u224F|\u2250|\u2251|\u2252|\u2253|\u2254|\u2255|\u2256|\u2257|\u2258|\u2259|\u225A|\u225B|\u225C|\u225D|\u225E|\u225F/g,
+      "~",
+    ],
+    [/\u2248|\u2243|\u2245|\u2247|\u2246|\u2242|\u2241|\u2240|\u223C|\u223D/g, "~"],
+    [/\u2248/g, "~"],
+    [/\u20AC/g, "EUR"],
+    [/\u00A3/g, "GBP"],
+    [/\u00A5/g, "JPY"],
+    [/\u2122/g, "TM"],
+    [/\u00AE/g, "(R)"],
+    [/\u00A9/g, "(C)"],
+    [/\u2192/g, "->"],
+    [/\u2190/g, "<-"],
+    [/\u2020/g, "+"],
+    [/\u2021/g, "++"],
   ];
 
   for (const [re, rep] of replacements) s = s.replace(re, rep);
 
-  // 3) Strip remaining non-ASCII characters that frequently break WinAnsi.
-  // Keep: tab/newline + visible ASCII 0x20–0x7E.
-  // (This is strict but safe. If you later embed a full Unicode TTF font, we can loosen this.)
   s = s.replace(/[^\x09\x0A\x20-\x7E]/g, "");
-
-  // 4) Collapse weird whitespace (but keep new lines)
   s = s.replace(/[ \t]+/g, " ");
   s = s.replace(/\n{3,}/g, "\n\n");
 
@@ -186,7 +197,8 @@ function safePersonalDetails(data: unknown): PersonalDetails | null {
   const pickNum = (k: keyof PersonalDetails) => {
     const v = (p as Record<string, unknown>)[k as string];
     const n = safeNumber(v);
-    if (typeof n === "number") (out as Record<string, unknown>)[k as string] = n;
+    if (typeof n === "number")
+      (out as Record<string, unknown>)[k as string] = n;
   };
 
   pickStr("fullName");
@@ -197,7 +209,6 @@ function safePersonalDetails(data: unknown): PersonalDetails | null {
   pickStr("city");
   pickStr("province");
   pickStr("postalCode");
-
   pickStr("maritalStatus");
   pickStr("spouseFullName");
   pickStr("spouseIdNumber");
@@ -215,7 +226,8 @@ function safeAssets(data: unknown): Asset[] {
     if (!isObject(item)) continue;
     const id = typeof item.id === "string" ? item.id : "";
     const type = typeof item.type === "string" ? item.type : "Other";
-    const description = typeof item.description === "string" ? item.description : "";
+    const description =
+      typeof item.description === "string" ? item.description : "";
     const value = typeof item.value === "number" ? item.value : null;
     if (!id || !description) continue;
     out.push({ id, type, description, value });
@@ -232,7 +244,8 @@ function safeBeneficiaries(data: unknown): Beneficiary[] {
     if (!isObject(item)) continue;
     const id = typeof item.id === "string" ? item.id : "";
     const fullName = typeof item.fullName === "string" ? item.fullName : "";
-    const relationship = typeof item.relationship === "string" ? item.relationship : "";
+    const relationship =
+      typeof item.relationship === "string" ? item.relationship : "";
     const isMinor = typeof item.isMinor === "boolean" ? item.isMinor : false;
     if (!id || !fullName) continue;
     out.push({ id, fullName, relationship, isMinor });
@@ -240,15 +253,20 @@ function safeBeneficiaries(data: unknown): Beneficiary[] {
   return out;
 }
 
-function safeExecutors(data: unknown): { primary: Executor | null; alternate: Executor | null } {
+function safeExecutors(data: unknown): {
+  primary: Executor | null;
+  alternate: Executor | null;
+} {
   if (!isObject(data)) return { primary: null, alternate: null };
   const ex = data.executors;
   if (!isObject(ex)) return { primary: null, alternate: null };
 
   const primary = isObject(ex.primary)
     ? {
-        fullName: typeof ex.primary.fullName === "string" ? ex.primary.fullName : "",
-        idNumber: typeof ex.primary.idNumber === "string" ? ex.primary.idNumber : "",
+        fullName:
+          typeof ex.primary.fullName === "string" ? ex.primary.fullName : "",
+        idNumber:
+          typeof ex.primary.idNumber === "string" ? ex.primary.idNumber : "",
         email: typeof ex.primary.email === "string" ? ex.primary.email : "",
         phone: typeof ex.primary.phone === "string" ? ex.primary.phone : "",
       }
@@ -256,10 +274,18 @@ function safeExecutors(data: unknown): { primary: Executor | null; alternate: Ex
 
   const alternate = isObject(ex.alternate)
     ? {
-        fullName: typeof ex.alternate.fullName === "string" ? ex.alternate.fullName : "",
-        idNumber: typeof ex.alternate.idNumber === "string" ? ex.alternate.idNumber : "",
-        email: typeof ex.alternate.email === "string" ? ex.alternate.email : "",
-        phone: typeof ex.alternate.phone === "string" ? ex.alternate.phone : "",
+        fullName:
+          typeof ex.alternate.fullName === "string"
+            ? ex.alternate.fullName
+            : "",
+        idNumber:
+          typeof ex.alternate.idNumber === "string"
+            ? ex.alternate.idNumber
+            : "",
+        email:
+          typeof ex.alternate.email === "string" ? ex.alternate.email : "",
+        phone:
+          typeof ex.alternate.phone === "string" ? ex.alternate.phone : "",
       }
     : null;
 
@@ -277,8 +303,10 @@ function safeDistributions(data: unknown): Distributions {
     const allocs: Allocation[] = [];
     for (const a of allocsUnknown) {
       if (!isObject(a)) continue;
-      const beneficiaryId = typeof a.beneficiaryId === "string" ? a.beneficiaryId : "";
-      const percentage = typeof a.percentage === "number" ? a.percentage : NaN;
+      const beneficiaryId =
+        typeof a.beneficiaryId === "string" ? a.beneficiaryId : "";
+      const percentage =
+        typeof a.percentage === "number" ? a.percentage : NaN;
       if (!beneficiaryId) continue;
       if (!Number.isFinite(percentage)) continue;
       allocs.push({ beneficiaryId, percentage });
@@ -311,10 +339,14 @@ function safeConfirmations(data: unknown): Confirmations | null {
   const c = data.confirmations;
   if (!isObject(c)) return null;
 
-  const confirmed = typeof c.confirmed === "boolean" ? c.confirmed : undefined;
+  const confirmed =
+    typeof c.confirmed === "boolean" ? c.confirmed : undefined;
   const confirmedAt: unknown = (c as Record<string, unknown>).confirmedAt;
 
-  if (typeof confirmed === "undefined" && (confirmedAt === null || typeof confirmedAt === "undefined")) {
+  if (
+    typeof confirmed === "undefined" &&
+    (confirmedAt === null || typeof confirmedAt === "undefined")
+  ) {
     return null;
   }
 
@@ -329,7 +361,9 @@ function safeResidueInfo(data: unknown): ResidueInfo {
 
   const mode = safeString((r as Record<string, unknown>).mode)?.toUpperCase();
   if (mode === "BENEFICIARY") {
-    const beneficiaryId = safeString((r as Record<string, unknown>).beneficiaryId);
+    const beneficiaryId = safeString(
+      (r as Record<string, unknown>).beneficiaryId
+    );
     if (beneficiaryId) return { mode: "BENEFICIARY", beneficiaryId };
   }
 
@@ -339,8 +373,11 @@ function safeResidueInfo(data: unknown): ResidueInfo {
       const allocations: Allocation[] = [];
       for (const a of allocsUnknown) {
         if (!isObject(a)) continue;
-        const beneficiaryId = safeString((a as Record<string, unknown>).beneficiaryId) ?? "";
-        const percentage = safeNumber((a as Record<string, unknown>).percentage);
+        const beneficiaryId =
+          safeString((a as Record<string, unknown>).beneficiaryId) ?? "";
+        const percentage = safeNumber(
+          (a as Record<string, unknown>).percentage
+        );
         if (!beneficiaryId) continue;
         if (typeof percentage !== "number") continue;
         allocations.push({ beneficiaryId, percentage });
@@ -368,7 +405,12 @@ class PdfWriter {
   private page: PDFPage;
   private y: number;
 
-  constructor(args: { pdf: PDFDocument; layout: PdfLayout; font: PDFFont; fontBold: PDFFont }) {
+  constructor(args: {
+    pdf: PDFDocument;
+    layout: PdfLayout;
+    font: PDFFont;
+    fontBold: PDFFont;
+  }) {
     this.pdf = args.pdf;
     this.layout = args.layout;
     this.font = args.font;
@@ -389,7 +431,12 @@ class PdfWriter {
     return f.widthOfTextAtSize(text, size);
   }
 
-  private wrap(text: string, size: number, bold: boolean, maxWidth: number): string[] {
+  private wrap(
+    text: string,
+    size: number,
+    bold: boolean,
+    maxWidth: number
+  ): string[] {
     const cleaned = sanitizeWinAnsi(text).replace(/\s+/g, " ").trim();
     if (!cleaned) return [""];
     const words = cleaned.split(" ");
@@ -454,12 +501,22 @@ class PdfWriter {
 
   public subTitle(text: string) {
     this.ensureSpace(18);
-    this.drawText(text, { size: 10, bold: false, color: rgb(0.27, 0.27, 0.27) });
+    this.drawText(text, {
+      size: 10,
+      bold: false,
+      color: rgb(0.27, 0.27, 0.27),
+    });
   }
 
   public drawText(
     text: string,
-    opts?: { size?: number; bold?: boolean; color?: ReturnType<typeof rgb>; indent?: number; lineGap?: number }
+    opts?: {
+      size?: number;
+      bold?: boolean;
+      color?: ReturnType<typeof rgb>;
+      indent?: number;
+      lineGap?: number;
+    }
   ) {
     const size = opts?.size ?? 10;
     const bold = opts?.bold ?? false;
@@ -470,7 +527,6 @@ class PdfWriter {
     const maxWidth = this.layout.width - indent;
 
     const safeText = sanitizeWinAnsi(text);
-
     const lines = this.wrap(safeText, size, bold, maxWidth);
     const minSpace = lines.length * (size + lineGap) + 2;
     this.ensureSpace(minSpace);
@@ -478,7 +534,14 @@ class PdfWriter {
     const f = bold ? this.fontBold : this.font;
     for (const line of lines) {
       const safeLine = sanitizeWinAnsi(line);
-      this.page.drawText(safeLine, { x, y: this.y, size, font: f, color, maxWidth });
+      this.page.drawText(safeLine, {
+        x,
+        y: this.y,
+        size,
+        font: f,
+        color,
+        maxWidth,
+      });
       this.y -= size + lineGap;
     }
   }
@@ -503,7 +566,11 @@ class PdfWriter {
     this.drawText(`${label}: ${value}`);
   }
 
-  public signatureBlock(args: { title: string; nameLine?: string; idLine?: string }) {
+  public signatureBlock(args: {
+    title: string;
+    nameLine?: string;
+    idLine?: string;
+  }) {
     this.ensureSpace(110);
 
     this.drawText(args.title, { size: 10, bold: true });
@@ -524,14 +591,22 @@ class PdfWriter {
     if (args.idLine) this.drawText(args.idLine, { size: 10 });
 
     this.spacer(6);
-    this.drawText("Date: ____________________________    Place: ____________________________", { size: 10 });
+    this.drawText(
+      "Date: ____________________________    Place: ____________________________",
+      { size: 10 }
+    );
 
     this.spacer(10);
   }
 }
 
 function buildAddress(personal: PersonalDetails | null) {
-  const address = [personal?.address, personal?.city, personal?.province, personal?.postalCode]
+  const address = [
+    personal?.address,
+    personal?.city,
+    personal?.province,
+    personal?.postalCode,
+  ]
     .filter(Boolean)
     .join(", ");
   return address || "—";
@@ -556,17 +631,24 @@ function normalizePercentages(allocs: Allocation[]) {
     .map((a) => ({ beneficiaryId: a.beneficiaryId, percentage: a.percentage }));
 }
 
-function computeDefaultResidue(beneficiaries: Beneficiary[], residue: ResidueInfo): Allocation[] {
+function computeDefaultResidue(
+  beneficiaries: Beneficiary[],
+  residue: ResidueInfo
+): Allocation[] {
   const valid = beneficiaries.map((b) => b.id).filter(Boolean);
   if (valid.length === 0) return [];
 
   if (residue.mode === "BENEFICIARY") {
-    if (valid.includes(residue.beneficiaryId)) return [{ beneficiaryId: residue.beneficiaryId, percentage: 100 }];
+    if (valid.includes(residue.beneficiaryId)) {
+      return [{ beneficiaryId: residue.beneficiaryId, percentage: 100 }];
+    }
     return [];
   }
 
   if (residue.mode === "PERCENTAGES") {
-    const allocs = normalizePercentages(residue.allocations).filter((a) => valid.includes(a.beneficiaryId));
+    const allocs = normalizePercentages(residue.allocations).filter((a) =>
+      valid.includes(a.beneficiaryId)
+    );
     if (!allocs.length) return [];
     return allocs;
   }
@@ -574,25 +656,47 @@ function computeDefaultResidue(beneficiaries: Beneficiary[], residue: ResidueInf
   const each = Math.round((100 / valid.length) * 100) / 100;
   const allocs: Allocation[] = valid.map((id, i) => ({
     beneficiaryId: id,
-    percentage: i === valid.length - 1 ? Math.round((100 - each * (valid.length - 1)) * 100) / 100 : each,
+    percentage:
+      i === valid.length - 1
+        ? Math.round((100 - each * (valid.length - 1)) * 100) / 100
+        : each,
   }));
   return allocs;
 }
 
 export async function GET() {
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+
+  if (!user) {
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
+
+  if (!user.emailVerified) {
+    return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+  }
+
+  if (!user.onboardingCompleted) {
+    return NextResponse.json(
+      { error: "ONBOARDING_INCOMPLETE" },
+      { status: 403 }
+    );
+  }
 
   const draft = await prisma.willDraft.findUnique({
     where: { userId: user.id },
     select: { status: true, updatedAt: true, data: true },
   });
 
-  if (!draft) return NextResponse.json({ error: "NO_DRAFT" }, { status: 404 });
+  if (!draft) {
+    return NextResponse.json({ error: "NO_DRAFT" }, { status: 404 });
+  }
 
   if (draft.status !== "LOCKED") {
     return NextResponse.json(
-      { error: "NOT_LOCKED", message: "Will must be locked before downloading PDF." },
+      {
+        error: "NOT_LOCKED",
+        message: "Will must be locked before downloading PDF.",
+      },
       { status: 400 }
     );
   }
@@ -618,21 +722,42 @@ export async function GET() {
     personal?.fullName ?? userFullName ?? undefined,
     "__________________________"
   );
-  const testatorId = safeTextOrPlaceholder(personal?.idNumber, "__________________________");
-  const testatorEmail = safeTextOrPlaceholder(personal?.email ?? userEmail ?? undefined, "—");
+  const testatorId = safeTextOrPlaceholder(
+    personal?.idNumber,
+    "__________________________"
+  );
+  const testatorEmail = safeTextOrPlaceholder(
+    personal?.email ?? userEmail ?? undefined,
+    "—"
+  );
   const testatorPhone = safeTextOrPlaceholder(personal?.phone, "—");
   const testatorAddress = buildAddress(personal);
 
-  const placeForDisplay = safeTextOrPlaceholder(personal?.city, "__________________________");
+  const placeForDisplay = safeTextOrPlaceholder(
+    personal?.city,
+    "__________________________"
+  );
 
   const confirmedAtDate = safeDateFromUnknown(confirmations?.confirmedAt);
   const generatedAt = confirmedAtDate ?? draft.updatedAt;
   const generatedDateForDisplay = formatDateZA(generatedAt);
 
-  const primaryExecutorName = safeTextOrPlaceholder(executors.primary?.fullName, "__________________________");
-  const primaryExecutorId = safeTextOrPlaceholder(executors.primary?.idNumber, "__________________________");
-  const alternateExecutorName = safeTextOrPlaceholder(executors.alternate?.fullName, "__________________________");
-  const alternateExecutorId = safeTextOrPlaceholder(executors.alternate?.idNumber, "__________________________");
+  const primaryExecutorName = safeTextOrPlaceholder(
+    executors.primary?.fullName,
+    "__________________________"
+  );
+  const primaryExecutorId = safeTextOrPlaceholder(
+    executors.primary?.idNumber,
+    "__________________________"
+  );
+  const alternateExecutorName = safeTextOrPlaceholder(
+    executors.alternate?.fullName,
+    "__________________________"
+  );
+  const alternateExecutorId = safeTextOrPlaceholder(
+    executors.alternate?.idNumber,
+    "__________________________"
+  );
 
   const minorBeneficiaries = beneficiaries.filter((b) => b.isMinor);
 
@@ -663,7 +788,9 @@ export async function GET() {
   w.keyValue("Phone", testatorPhone);
 
   w.heading("2. REVOCATION OF PREVIOUS WILLS");
-  w.drawText("I revoke all prior wills, codicils and testamentary dispositions previously made by me.");
+  w.drawText(
+    "I revoke all prior wills, codicils and testamentary dispositions previously made by me."
+  );
 
   w.heading("3. DECLARATION");
   w.drawText(
@@ -671,10 +798,15 @@ export async function GET() {
   );
 
   w.heading("4. MARITAL STATUS AND DEPENDANTS");
-  const maritalStatus = safeTextOrPlaceholder(personal?.maritalStatus, "__________________________");
+  const maritalStatus = safeTextOrPlaceholder(
+    personal?.maritalStatus,
+    "__________________________"
+  );
   w.drawText(`Marital status: ${maritalStatus}`);
   const childrenCount =
-    typeof personal?.numberOfChildren === "number" ? String(personal.numberOfChildren) : "__________________________";
+    typeof personal?.numberOfChildren === "number"
+      ? String(personal.numberOfChildren)
+      : "__________________________";
   w.drawText(`Number of children / dependants: ${childrenCount}`);
   w.spacer(6);
 
@@ -696,7 +828,9 @@ export async function GET() {
   );
 
   w.heading("5. APPOINTMENT OF EXECUTOR");
-  w.drawText(`I nominate and appoint ${primaryExecutorName} (ID: ${primaryExecutorId}) as the Executor of my estate.`);
+  w.drawText(
+    `I nominate and appoint ${primaryExecutorName} (ID: ${primaryExecutorId}) as the Executor of my estate.`
+  );
   w.spacer(6);
   w.drawText(
     `If the above Executor is unable or unwilling to act, I nominate and appoint ${alternateExecutorName} (ID: ${alternateExecutorId}) as alternate Executor.`
@@ -706,12 +840,18 @@ export async function GET() {
   w.bullet(
     "To administer my estate in accordance with South African law, to collect assets, pay debts, expenses and taxes, and to distribute the remainder in terms of this Will."
   );
-  w.bullet("To sell, exchange, lease or otherwise deal with assets of the estate as reasonably necessary.");
-  w.bullet("To sign all documents and do all things necessary to give effect to this Will.");
+  w.bullet(
+    "To sell, exchange, lease or otherwise deal with assets of the estate as reasonably necessary."
+  );
+  w.bullet(
+    "To sign all documents and do all things necessary to give effect to this Will."
+  );
 
   w.heading("6. SCHEDULE OF BENEFICIARIES");
   if (beneficiaries.length === 0) {
-    w.drawText("No beneficiaries have been captured. This Will cannot be completed without at least one beneficiary.");
+    w.drawText(
+      "No beneficiaries have been captured. This Will cannot be completed without at least one beneficiary."
+    );
   } else {
     w.drawText("I record the following beneficiaries:");
     for (const b of beneficiaries) {
@@ -725,7 +865,9 @@ export async function GET() {
   if (assets.length === 0) {
     w.drawText("No assets have been captured.");
   } else if (beneficiaries.length === 0) {
-    w.drawText("Assets are captured, but beneficiaries are missing. Please add beneficiaries to allocate assets.");
+    w.drawText(
+      "Assets are captured, but beneficiaries are missing. Please add beneficiaries to allocate assets."
+    );
   } else {
     w.drawText(
       "I bequeath the following assets and allocations. Percentages reflect the intended share of each listed asset."
@@ -733,26 +875,33 @@ export async function GET() {
     w.spacer(6);
 
     for (const a of assets) {
-      const valueStr = a.value !== null ? ` • Estimated value: ${formatZAR(a.value)}` : "";
+      const valueStr =
+        a.value !== null ? ` • Estimated value: ${formatZAR(a.value)}` : "";
       w.drawText(`${a.type}: ${a.description}${valueStr}`, { bold: true });
 
       const allocs = normalizePercentages(distributions[a.id] ?? []);
       if (allocs.length === 0) {
-        w.drawText("No allocations captured for this asset.", { color: rgb(0.27, 0.27, 0.27) });
+        w.drawText("No allocations captured for this asset.", {
+          color: rgb(0.27, 0.27, 0.27),
+        });
         w.spacer(6);
         continue;
       }
 
       const total = percentTotal(allocs);
-      w.drawText(`Total allocation recorded: ${total}%`, { size: 9, color: rgb(0.27, 0.27, 0.27) });
+      w.drawText(`Total allocation recorded: ${total}%`, {
+        size: 9,
+        color: rgb(0.27, 0.27, 0.27),
+      });
 
       for (const x of allocs) {
         const b = beneficiaryById.get(x.beneficiaryId);
         const name = b ? b.fullName : "Unknown beneficiary";
         if (a.value !== null && Number.isFinite(a.value)) {
           const amount = (a.value * x.percentage) / 100;
-          // NOTE: the sanitizer will replace ≈ with ~, but we keep your original string here.
-          w.bullet(`${name} — ${x.percentage}% (≈ ${formatZAR(amount)})`, { indent: 4 });
+          w.bullet(`${name} — ${x.percentage}% (~ ${formatZAR(amount)})`, {
+            indent: 4,
+          });
         } else {
           w.bullet(`${name} — ${x.percentage}%`, { indent: 4 });
         }
@@ -764,24 +913,38 @@ export async function GET() {
 
   w.heading("8. RESIDUE OF ESTATE");
   if (beneficiaries.length === 0) {
-    w.drawText("Residue clause cannot be applied because no beneficiaries are recorded. Please add beneficiaries.");
+    w.drawText(
+      "Residue clause cannot be applied because no beneficiaries are recorded. Please add beneficiaries."
+    );
   } else {
-    const residueAllocations = computeDefaultResidue(beneficiaries, residueInfo);
+    const residueAllocations = computeDefaultResidue(
+      beneficiaries,
+      residueInfo
+    );
     w.drawText(
       "I direct that the residue of my estate (being all property not otherwise specifically bequeathed in this Will) shall be distributed as follows:"
     );
     w.spacer(6);
 
     if (residueAllocations.length === 0) {
-      w.drawText("Residue allocations could not be determined. Default is equal split among beneficiaries.", {
-        color: rgb(0.27, 0.27, 0.27),
-      });
+      w.drawText(
+        "Residue allocations could not be determined. Default is equal split among beneficiaries.",
+        {
+          color: rgb(0.27, 0.27, 0.27),
+        }
+      );
     } else {
       const total = percentTotal(residueAllocations);
-      w.drawText(`Residue allocation total: ${total}%`, { size: 9, color: rgb(0.27, 0.27, 0.27) });
+      w.drawText(`Residue allocation total: ${total}%`, {
+        size: 9,
+        color: rgb(0.27, 0.27, 0.27),
+      });
       for (const a of residueAllocations) {
         const b = beneficiaryById.get(a.beneficiaryId);
-        w.bullet(`${b ? b.fullName : "Unknown beneficiary"} — ${a.percentage}%`, { indent: 4 });
+        w.bullet(
+          `${b ? b.fullName : "Unknown beneficiary"} — ${a.percentage}%`,
+          { indent: 4 }
+        );
       }
     }
   }
@@ -791,7 +954,9 @@ export async function GET() {
     "I sign this Will in the presence of the undersigned witnesses, all being present at the same time, and the witnesses sign in my presence and in the presence of each other."
   );
   w.spacer(8);
-  w.drawText(`Signed at ${placeForDisplay} on this ______ day of __________________ 20____.`);
+  w.drawText(
+    `Signed at ${placeForDisplay} on this ______ day of __________________ 20____.`
+  );
 
   w.spacer(14);
 
@@ -806,14 +971,26 @@ export async function GET() {
 
   w.signatureBlock({
     title: "WITNESS 1",
-    nameLine: `Full Name: ${safeTextOrPlaceholder(w1?.fullName, "__________________________")}`,
-    idLine: `ID / Passport: ${safeTextOrPlaceholder(w1?.idNumber, "__________________________")}`,
+    nameLine: `Full Name: ${safeTextOrPlaceholder(
+      w1?.fullName,
+      "__________________________"
+    )}`,
+    idLine: `ID / Passport: ${safeTextOrPlaceholder(
+      w1?.idNumber,
+      "__________________________"
+    )}`,
   });
 
   w.signatureBlock({
     title: "WITNESS 2",
-    nameLine: `Full Name: ${safeTextOrPlaceholder(w2?.fullName, "__________________________")}`,
-    idLine: `ID / Passport: ${safeTextOrPlaceholder(w2?.idNumber, "__________________________")}`,
+    nameLine: `Full Name: ${safeTextOrPlaceholder(
+      w2?.fullName,
+      "__________________________"
+    )}`,
+    idLine: `ID / Passport: ${safeTextOrPlaceholder(
+      w2?.idNumber,
+      "__________________________"
+    )}`,
   });
 
   w.spacer(6);
@@ -828,7 +1005,8 @@ export async function GET() {
   return new Response(body, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="willmyway-last-will-and-testament.pdf"`,
+      "Content-Disposition":
+        'attachment; filename="willmyway-last-will-and-testament.pdf"',
       "Cache-Control": "no-store",
     },
   });

@@ -6,6 +6,9 @@ import Step5DistributionsForm from "./step5-distributions-form";
 export default async function WillStep5Page() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (!user.onboardingCompleted) {
+  redirect("/onboarding");
+}
 
   return (
     <main className="min-h-screen bg-[#f6f8fb]">

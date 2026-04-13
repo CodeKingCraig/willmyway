@@ -56,6 +56,7 @@ type DraftErr = {
 const MAX_VIDEO_COUNT = 5;
 const MAX_VIDEO_SIZE_MB = 500;
 const MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024;
+const ESTIMATED_VIDEO_MINUTES = "±10";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -160,20 +161,25 @@ function formatShort(dIso?: string) {
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(
+    1
+  )} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 function Field({
   label,
+  hint,
   children,
 }: {
   label: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700">{label}</label>
+      {hint ? <div className="mt-1 text-xs text-slate-500">{hint}</div> : null}
       <div className="mt-2">{children}</div>
     </div>
   );
@@ -191,12 +197,12 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-[26px] border border-slate-200/90 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-base font-semibold text-slate-900">{title}</div>
           {subtitle ? (
-            <div className="mt-1 text-sm text-slate-600">{subtitle}</div>
+            <div className="mt-1 text-sm leading-6 text-slate-600">{subtitle}</div>
           ) : null}
         </div>
         {action}
@@ -204,6 +210,14 @@ function SectionCard({
 
       <div className="mt-5">{children}</div>
     </div>
+  );
+}
+
+function SoftPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+      {children}
+    </span>
   );
 }
 
@@ -386,7 +400,7 @@ export default function LegacyClient() {
 
       await saveLegacy(nextLegacy);
       setLegacy(nextLegacy);
-      setMsg("Letters saved.");
+      setMsg("Letter saved.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save.");
     } finally {
@@ -452,7 +466,9 @@ export default function LegacyClient() {
       }
 
       if (file.size > MAX_VIDEO_SIZE_BYTES) {
-        rejected.push(`${file.name}: exceeds ${MAX_VIDEO_SIZE_MB}MB`);
+        rejected.push(
+          `${file.name}: too large for one message slot`
+        );
         continue;
       }
 
@@ -473,7 +489,7 @@ export default function LegacyClient() {
     if (nextItems.length > 0) {
       setVideoItems((prev) => [...prev, ...nextItems]);
       setVideoMsg(
-        "Videos added locally. Real upload persistence still needs backend storage wiring."
+        "Videos added locally. Permanent upload storage still needs backend wiring."
       );
     }
 
@@ -565,11 +581,19 @@ export default function LegacyClient() {
                         : "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:bg-slate-50"
                     }
                   >
-                    <div className="text-sm font-semibold text-slate-900">
-                      {l.recipientName || "Unnamed recipient"}
-                    </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {l.subject || "No subject"} • {formatShort(l.updatedAt)}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-slate-900">
+                          {l.recipientName || "Unnamed recipient"}
+                        </div>
+                        <div className="mt-1 truncate text-xs text-slate-500">
+                          {l.subject || "No subject"}
+                        </div>
+                      </div>
+
+                      <span className="shrink-0 text-[11px] font-medium text-slate-400">
+                        {formatShort(l.updatedAt)}
+                      </span>
                     </div>
                   </button>
                 );
@@ -656,7 +680,10 @@ export default function LegacyClient() {
                   />
                 </Field>
 
-                <Field label="Message">
+                <Field
+                  label="Message"
+                  hint="The most meaningful letters are usually simple, honest, and specific."
+                >
                   <textarea
                     value={selectedLetter.body}
                     onChange={(e) =>
@@ -683,7 +710,7 @@ export default function LegacyClient() {
 
           <SectionCard
             title="Video vault"
-            subtitle={`Add up to ${MAX_VIDEO_COUNT} videos. Limit: ${MAX_VIDEO_SIZE_MB}MB per video.`}
+            subtitle={`Add up to ${MAX_VIDEO_COUNT} videos. Up to ${ESTIMATED_VIDEO_MINUTES} minutes each in high quality.`}
             action={
               <>
                 <input
@@ -712,14 +739,14 @@ export default function LegacyClient() {
                   <div className="text-sm font-semibold text-slate-900">
                     Private messages on video
                   </div>
-                  <div className="mt-1 text-sm text-slate-600">
-                    Record encouragement, guidance, or personal messages for your loved ones.
+                  <div className="mt-1 text-sm leading-6 text-slate-600">
+                    Record encouragement, guidance, gratitude, or personal messages for your loved ones.
                   </div>
                 </div>
 
-                <div className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                <SoftPill>
                   {videoItems.length}/{MAX_VIDEO_COUNT} used
-                </div>
+                </SoftPill>
               </div>
 
               <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/90 ring-1 ring-white/70">
@@ -733,13 +760,42 @@ export default function LegacyClient() {
                   }}
                 />
               </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-white/85 p-4 ring-1 ring-white/80">
+                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Recommended length
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-slate-900">
+                    {ESTIMATED_VIDEO_MINUTES} minutes each
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/85 p-4 ring-1 ring-white/80">
+                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Message style
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-slate-900">
+                    Calm, personal, clear
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/85 p-4 ring-1 ring-white/80">
+                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Capacity
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-slate-900">
+                    Up to {MAX_VIDEO_COUNT} private videos
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {videoItems.map((video) => (
                 <div
                   key={video.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-4"
+                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -782,20 +838,20 @@ export default function LegacyClient() {
                   className="flex min-h-[180px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-[#f8fafc] p-4 text-center transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                    Empty slot
+                    Ready for message {videoItems.length + index + 1}
                   </div>
                   <div className="mt-3 text-sm font-semibold text-slate-900">
                     Add a private video
                   </div>
                   <div className="mt-1 text-xs leading-5 text-slate-500">
-                    Up to {MAX_VIDEO_SIZE_MB}MB per file
+                    Up to {ESTIMATED_VIDEO_MINUTES} minutes in high quality
                   </div>
                 </button>
               ))}
             </div>
 
             <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-800 ring-1 ring-amber-200">
-              Video slot limits are enforced now. Real upload persistence still needs backend storage and saved metadata support.
+              Video slot limits are active now. Permanent upload storage and saved metadata still need backend support.
             </div>
           </SectionCard>
 
