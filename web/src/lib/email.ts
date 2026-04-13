@@ -1,5 +1,9 @@
 function getAppUrl() {
-  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  return (
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000"
+  ).replace(/\/$/, "");
 }
 
 export function buildVerificationUrl(token: string) {
@@ -48,7 +52,9 @@ export async function sendVerificationEmail(params: {
   token: string;
 }) {
   const verifyUrl = buildVerificationUrl(params.token);
-  const greeting = params.fullName?.trim() ? `Hi ${params.fullName.trim()},` : "Hi,";
+  const greeting = params.fullName?.trim()
+    ? `Hi ${params.fullName.trim()},`
+    : "Hi,";
 
   const html = `
     <div style="margin:0;padding:32px;background:#f6f8fb;font-family:Arial,sans-serif;color:#0f172a;">
@@ -70,10 +76,7 @@ export async function sendVerificationEmail(params: {
         </p>
 
         <div style="margin:32px 0;">
-          <a
-            href="${verifyUrl}"
-            style="display:inline-block;padding:14px 22px;border-radius:16px;background:#7b95bb;color:#ffffff;text-decoration:none;font-weight:700;"
-          >
+          <a href="${verifyUrl}" style="display:inline-block;padding:14px 22px;border-radius:16px;background:#7b95bb;color:#ffffff;text-decoration:none;font-weight:700;">
             Verify Email
           </a>
         </div>
@@ -103,7 +106,9 @@ export async function sendPasswordResetEmail(params: {
   token: string;
 }) {
   const resetUrl = buildPasswordResetUrl(params.token);
-  const greeting = params.fullName?.trim() ? `Hi ${params.fullName.trim()},` : "Hi,";
+  const greeting = params.fullName?.trim()
+    ? `Hi ${params.fullName.trim()},`
+    : "Hi,";
 
   const html = `
     <div style="margin:0;padding:32px;background:#f6f8fb;font-family:Arial,sans-serif;color:#0f172a;">
@@ -125,10 +130,7 @@ export async function sendPasswordResetEmail(params: {
         </p>
 
         <div style="margin:32px 0;">
-          <a
-            href="${resetUrl}"
-            style="display:inline-block;padding:14px 22px;border-radius:16px;background:#7b95bb;color:#ffffff;text-decoration:none;font-weight:700;"
-          >
+          <a href="${resetUrl}" style="display:inline-block;padding:14px 22px;border-radius:16px;background:#7b95bb;color:#ffffff;text-decoration:none;font-weight:700;">
             Reset Password
           </a>
         </div>
