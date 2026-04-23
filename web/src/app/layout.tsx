@@ -8,8 +8,8 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "WillMyWay",
-  description: "Your Will. Your Way. Zero Confusion.",
+  title: "KeepSave",
+  description: "Protect your wishes with clarity, security, and peace of mind.",
 };
 
 export default function RootLayout({

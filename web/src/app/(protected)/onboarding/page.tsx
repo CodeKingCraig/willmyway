@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
               </div>
 
               <h1 className="mt-5 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                Before we begin, let’s personalise your WillMyWay journey.
+                Before we begin, let’s personalise your KeepSave journey.
               </h1>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">

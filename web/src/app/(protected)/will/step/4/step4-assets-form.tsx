@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Script from "next/script";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type AssetType =
@@ -26,6 +27,66 @@ type Asset = {
   country: string;
   googleMapsLink: string;
 };
+
+type GooglePrediction = {
+  description: string;
+  placePrediction: GooglePlacePredictionLite;
+};
+
+type GoogleAddressComponent = {
+  longText?: string;
+  shortText?: string;
+  types: string[];
+};
+
+type GooglePlaceLite = {
+  addressComponents?: GoogleAddressComponent[];
+  formattedAddress?: string;
+  googleMapsURI?: string;
+  fetchFields: (request: { fields: string[] }) => Promise<void>;
+};
+
+type GooglePlacePredictionLite = {
+  text?: {
+    toString?: () => string;
+    text?: string;
+  };
+  toPlace: () => GooglePlaceLite;
+};
+
+type GoogleAutocompleteSuggestionLite = {
+  placePrediction?: GooglePlacePredictionLite;
+};
+
+type GoogleAutocompleteResponseLite = {
+  suggestions?: GoogleAutocompleteSuggestionLite[];
+};
+
+type GoogleAutocompleteSessionTokenLite = object;
+
+type GooglePlacesLibraryLite = {
+  AutocompleteSuggestion: {
+    fetchAutocompleteSuggestions: (request: {
+      input: string;
+      includedRegionCodes?: string[];
+      sessionToken?: GoogleAutocompleteSessionTokenLite;
+      language?: string;
+    }) => Promise<GoogleAutocompleteResponseLite>;
+  };
+  AutocompleteSessionToken?: new () => GoogleAutocompleteSessionTokenLite;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      maps?: {
+        importLibrary?: (
+          libraryName: "places"
+        ) => Promise<GooglePlacesLibraryLite>;
+      };
+    };
+  }
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -201,6 +262,92 @@ function addressPreview(asset: Asset) {
     .join(", ");
 }
 
+function getAddressComponent(
+  components: GoogleAddressComponent[] | undefined,
+  type: string
+) {
+  return components?.find((component) => component.types.includes(type));
+}
+
+function componentLongText(
+  components: GoogleAddressComponent[] | undefined,
+  type: string
+) {
+  return getAddressComponent(components, type)?.longText ?? "";
+}
+
+function mapProvinceName(value: string) {
+  const normalized = value.trim().toLowerCase();
+
+  const provinceMap: Record<string, string> = {
+    "eastern cape": "Eastern Cape",
+    "free state": "Free State",
+    gauteng: "Gauteng",
+    "kwazulu-natal": "KwaZulu-Natal",
+    "kwa-zulu natal": "KwaZulu-Natal",
+    "kwazulu natal": "KwaZulu-Natal",
+    limpopo: "Limpopo",
+    mpumalanga: "Mpumalanga",
+    "northern cape": "Northern Cape",
+    "north west": "North West",
+    "western cape": "Western Cape",
+  };
+
+  return provinceMap[normalized] ?? value;
+}
+
+function buildStreetAddress(components: GoogleAddressComponent[] | undefined) {
+  const streetNumber = componentLongText(components, "street_number");
+  const route = componentLongText(components, "route");
+
+  return [streetNumber, route].filter(Boolean).join(" ").trim();
+}
+
+function buildAddressLine2(components: GoogleAddressComponent[] | undefined) {
+  const candidates = [
+    componentLongText(components, "subpremise"),
+    componentLongText(components, "premise"),
+    componentLongText(components, "neighborhood"),
+    componentLongText(components, "sublocality"),
+    componentLongText(components, "sublocality_level_1"),
+  ].filter((value): value is string => Boolean(value));
+
+  return candidates.join(", ");
+}
+
+function buildCity(components: GoogleAddressComponent[] | undefined) {
+  return (
+    componentLongText(components, "locality") ||
+    componentLongText(components, "postal_town") ||
+    componentLongText(components, "sublocality_level_1") ||
+    componentLongText(components, "administrative_area_level_2") ||
+    ""
+  );
+}
+
+function buildProvince(components: GoogleAddressComponent[] | undefined) {
+  const province = componentLongText(components, "administrative_area_level_1");
+  return province ? mapProvinceName(province) : "";
+}
+
+function buildCountry(components: GoogleAddressComponent[] | undefined) {
+  return componentLongText(components, "country") || "South Africa";
+}
+
+function predictionTextToString(prediction: GooglePlacePredictionLite) {
+  const value = prediction.text;
+
+  if (!value) return "";
+  if (typeof value.toString === "function") {
+    const result = value.toString();
+    if (typeof result === "string" && result.trim()) return result;
+  }
+
+  if (typeof value.text === "string") return value.text;
+
+  return "";
+}
+
 export default function Step4AssetsForm() {
   const router = useRouter();
 
@@ -213,6 +360,22 @@ export default function Step4AssetsForm() {
 
   const [error, setError] = useState<string | null>(null);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+
+  const [googleReady, setGoogleReady] = useState(false);
+  const [placesReady, setPlacesReady] = useState(false);
+  const [addressSuggestions, setAddressSuggestions] = useState<GooglePrediction[]>(
+    []
+  );
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [addressSearching, setAddressSearching] = useState(false);
+
+  const placesLibraryRef = useRef<GooglePlacesLibraryLite | null>(null);
+  const sessionTokenRef = useRef<GoogleAutocompleteSessionTokenLite | null>(null);
+  const addressDropdownRef = useRef<HTMLDivElement | null>(null);
+  const autocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const autocompleteRequestIdRef = useRef(0);
 
   const canAdd = useMemo(() => {
     return active.description.trim().length >= 3;
@@ -281,6 +444,199 @@ export default function Step4AssetsForm() {
     load();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initPlacesLibrary() {
+      if (!googleReady || !window.google?.maps?.importLibrary) return;
+
+      try {
+        const placesLibrary = await window.google.maps.importLibrary("places");
+
+        if (cancelled) return;
+
+        placesLibraryRef.current = placesLibrary;
+
+        if (
+          !sessionTokenRef.current &&
+          typeof placesLibrary.AutocompleteSessionToken === "function"
+        ) {
+          sessionTokenRef.current = new placesLibrary.AutocompleteSessionToken();
+        }
+
+        setPlacesReady(true);
+      } catch {
+        if (!cancelled) {
+          setPlacesReady(false);
+          setAddressSuggestions([]);
+          setShowSuggestions(false);
+        }
+      }
+    }
+
+    initPlacesLibrary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [googleReady]);
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      if (
+        addressDropdownRef.current &&
+        !addressDropdownRef.current.contains(target)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!googleReady || !placesReady || !placesLibraryRef.current) return;
+    if (!showAddressSection) return;
+
+    const query = active.addressLine1.trim();
+
+    if (autocompleteTimerRef.current) {
+      clearTimeout(autocompleteTimerRef.current);
+    }
+
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+      setAddressSearching(false);
+      return;
+    }
+
+    const requestId = ++autocompleteRequestIdRef.current;
+
+    autocompleteTimerRef.current = setTimeout(async () => {
+      const placesLibrary = placesLibraryRef.current;
+      if (!placesLibrary) return;
+
+      setAddressSearching(true);
+
+      try {
+        if (
+          !sessionTokenRef.current &&
+          typeof placesLibrary.AutocompleteSessionToken === "function"
+        ) {
+          sessionTokenRef.current = new placesLibrary.AutocompleteSessionToken();
+        }
+
+        const response =
+          await placesLibrary.AutocompleteSuggestion.fetchAutocompleteSuggestions(
+            {
+              input: query,
+              includedRegionCodes: ["za"],
+              sessionToken: sessionTokenRef.current ?? undefined,
+              language: "en",
+            }
+          );
+
+        if (requestId !== autocompleteRequestIdRef.current) return;
+
+        const mapped: GooglePrediction[] = (response.suggestions ?? [])
+          .map((suggestion) => {
+            const placePrediction = suggestion.placePrediction;
+            if (!placePrediction) return null;
+
+            const description = predictionTextToString(placePrediction).trim();
+            if (!description) return null;
+
+            return {
+              description,
+              placePrediction,
+            };
+          })
+          .filter((item): item is GooglePrediction => Boolean(item));
+
+        setAddressSuggestions(mapped);
+        setShowSuggestions(mapped.length > 0);
+      } catch (error) {
+        console.error("Step 4 property autocomplete error:", error);
+
+        if (requestId === autocompleteRequestIdRef.current) {
+          setAddressSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } finally {
+        if (requestId === autocompleteRequestIdRef.current) {
+          setAddressSearching(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      if (autocompleteTimerRef.current) {
+        clearTimeout(autocompleteTimerRef.current);
+      }
+    };
+  }, [active.addressLine1, googleReady, placesReady, showAddressSection]);
+
+  async function onSelectAddressSuggestion(prediction: GooglePrediction) {
+    setActive((prev) => ({
+      ...prev,
+      addressLine1: prediction.description,
+    }));
+
+    setShowSuggestions(false);
+    setAddressSearching(true);
+
+    try {
+      const place = prediction.placePrediction.toPlace();
+
+      await place.fetchFields({
+        fields: ["addressComponents", "formattedAddress", "googleMapsURI"],
+      });
+
+      const components = place.addressComponents;
+
+      const streetAddress = buildStreetAddress(components);
+      const addressLine2 = buildAddressLine2(components);
+      const city = buildCity(components);
+      const province = buildProvince(components);
+      const country = buildCountry(components);
+      const googleMapsLink = place.googleMapsURI ?? "";
+
+      setActive((prev) => ({
+        ...prev,
+        addressLine1:
+          streetAddress || place.formattedAddress || prediction.description,
+        addressLine2: addressLine2 || prev.addressLine2,
+        city: city || prev.city,
+        province: province || prev.province,
+        country: country || prev.country || "South Africa",
+        googleMapsLink: googleMapsLink || prev.googleMapsLink,
+      }));
+
+      if (
+        placesLibraryRef.current?.AutocompleteSessionToken &&
+        typeof placesLibraryRef.current.AutocompleteSessionToken === "function"
+      ) {
+        sessionTokenRef.current =
+          new placesLibraryRef.current.AutocompleteSessionToken();
+      }
+    } catch {
+      setActive((prev) => ({
+        ...prev,
+        addressLine1: prediction.description,
+      }));
+    } finally {
+      setAddressSearching(false);
+      setAddressSuggestions([]);
+    }
+  }
+
   function addAsset() {
     if (!canAdd) return;
 
@@ -302,6 +658,8 @@ export default function Step4AssetsForm() {
     ]);
 
     setActive(emptyAsset());
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
     setSavedMsg(null);
     setError(null);
   }
@@ -360,7 +718,14 @@ export default function Step4AssetsForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ""}&libraries=places&v=weekly`}
+        strategy="afterInteractive"
+        onLoad={() => setGoogleReady(true)}
+      />
+
+      <div className="space-y-6">
       <div className="flex flex-col gap-3 rounded-2xl bg-[#f8fafc] px-4 py-4 ring-1 ring-slate-100 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-slate-600">
           Add the major items that form part of your estate.
@@ -510,17 +875,65 @@ export default function Step4AssetsForm() {
 
               <div className="mt-4 grid grid-cols-1 gap-5">
                 <Field label="Address line 1">
-                  <input
-                    value={active.addressLine1}
-                    onChange={(e) =>
-                      setActive({
-                        ...active,
-                        addressLine1: e.target.value,
-                      })
-                    }
-                    className={inputClassName()}
-                    placeholder="e.g. 29A Popham Street"
-                  />
+                  <div className="relative" ref={addressDropdownRef}>
+                    <input
+                      value={active.addressLine1}
+                      onChange={(e) => {
+                        const value = e.target.value;
+
+                        setActive({
+                          ...active,
+                          addressLine1: value,
+                        });
+
+                        if (value.trim().length < 3) {
+                          setAddressSuggestions([]);
+                          setShowSuggestions(false);
+                          setAddressSearching(false);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (addressSuggestions.length > 0) {
+                          setShowSuggestions(true);
+                        }
+                      }}
+                      className={inputClassName()}
+                      placeholder="e.g. 29A Popham Street"
+                      autoComplete="off"
+                    />
+
+                    {googleReady &&
+                    placesReady &&
+                    showSuggestions &&
+                    addressSuggestions.length > 0 ? (
+                      <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                        {addressSuggestions.map((suggestion) => (
+                          <button
+                            key={`${suggestion.description}-${predictionTextToString(
+                              suggestion.placePrediction
+                            )}`}
+                            type="button"
+                            onClick={() => onSelectAddressSuggestion(suggestion)}
+                            className="block w-full border-b border-slate-100 px-4 py-3 text-left text-sm text-slate-700 transition last:border-b-0 hover:bg-slate-50"
+                          >
+                            {suggestion.description}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {googleReady && placesReady && addressSearching ? (
+                      <div className="mt-2 text-xs text-slate-500">
+                        Searching property address suggestions…
+                      </div>
+                    ) : null}
+
+                    {(!googleReady || !placesReady) ? (
+                      <div className="mt-2 text-xs text-slate-500">
+                        Address autocomplete will load when Google Maps is ready.
+                      </div>
+                    ) : null}
+                  </div>
                 </Field>
 
                 <Field label="Address line 2">
@@ -806,6 +1219,7 @@ export default function Step4AssetsForm() {
           Add at least 1 asset to continue.
         </div>
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }

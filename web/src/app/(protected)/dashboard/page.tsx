@@ -290,7 +290,7 @@ function PersonalisedInsightCard({
 
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
           Your dashboard personalisation reflects the information you shared
-          during onboarding, helping WillMyWay keep the experience more relevant
+          during onboarding, helping KeepSave keep the experience more relevant
           and emotionally aligned.
         </p>
 
@@ -570,7 +570,7 @@ export default async function DashboardPage() {
                 <div className="mt-4 text-sm leading-6 text-slate-600">
                   {planMeta.description}
                   {careIsActive
-                    ? " Your WillMyWay Care add-on is currently active and attached to this base plan."
+                    ? " Your KeepSave Care add-on is currently active and attached to this base plan."
                     : ""}
                 </div>
 
@@ -609,7 +609,7 @@ export default async function DashboardPage() {
                     ))}
                     {careIsActive ? (
                       <div className="rounded-2xl bg-[#eef4ff] px-4 py-3 text-sm text-blue-800 ring-1 ring-[#d8e4fb]">
-                        WillMyWay Care add-on active
+                        KeepSave Care add-on active
                       </div>
                     ) : null}
                   </div>
@@ -781,7 +781,7 @@ export default async function DashboardPage() {
                   disabled
                   className="inline-flex items-center justify-center rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-500"
                 >
-                  WillMyWay Care (Coming Soon)
+                  KeepSave Care (Coming Soon)
                 </button>
               </div>
 

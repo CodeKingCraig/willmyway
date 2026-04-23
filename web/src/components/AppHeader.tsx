@@ -39,7 +39,7 @@ export default function AppHeader({ myWillHref }: AppHeaderProps) {
           href="/dashboard"
           className="text-2xl font-semibold tracking-tight text-slate-900"
         >
-          WillMyWay
+          KeepSave
         </Link>
 
         <nav className="flex items-center gap-6">

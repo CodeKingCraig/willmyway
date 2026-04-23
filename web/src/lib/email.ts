@@ -60,7 +60,7 @@ export async function sendVerificationEmail(params: {
     <div style="margin:0;padding:32px;background:#f6f8fb;font-family:Arial,sans-serif;color:#0f172a;">
       <div style="max-width:600px;margin:0 auto;background:rgba(255,255,255,0.92);border:1px solid #e2e8f0;border-radius:24px;padding:40px;">
         <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;font-weight:700;">
-          WillMyWay
+          KeepSave
         </div>
 
         <h1 style="margin:16px 0 12px;font-size:32px;line-height:1.2;color:#0f172a;">
@@ -72,7 +72,7 @@ export async function sendVerificationEmail(params: {
         </p>
 
         <p style="margin:0 0 20px;font-size:16px;line-height:1.7;color:#475569;">
-          Welcome to WillMyWay. Please verify your email address to activate your account and start building your will.
+          Welcome to KeepSave. Please verify your email address to activate your account and start building your will.
         </p>
 
         <div style="margin:32px 0;">
@@ -95,7 +95,7 @@ export async function sendVerificationEmail(params: {
 
   await sendEmail({
     to: params.to,
-    subject: "Verify your WillMyWay account",
+    subject: "Verify your KeepSave account",
     html,
   });
 }
@@ -114,7 +114,7 @@ export async function sendPasswordResetEmail(params: {
     <div style="margin:0;padding:32px;background:#f6f8fb;font-family:Arial,sans-serif;color:#0f172a;">
       <div style="max-width:600px;margin:0 auto;background:rgba(255,255,255,0.92);border:1px solid #e2e8f0;border-radius:24px;padding:40px;">
         <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;font-weight:700;">
-          WillMyWay
+          KeepSave
         </div>
 
         <h1 style="margin:16px 0 12px;font-size:32px;line-height:1.2;color:#0f172a;">
@@ -126,7 +126,7 @@ export async function sendPasswordResetEmail(params: {
         </p>
 
         <p style="margin:0 0 20px;font-size:16px;line-height:1.7;color:#475569;">
-          We received a request to reset your WillMyWay password. Use the button below to choose a new one.
+          We received a request to reset your KeepSave password. Use the button below to choose a new one.
         </p>
 
         <div style="margin:32px 0;">
@@ -149,7 +149,7 @@ export async function sendPasswordResetEmail(params: {
 
   await sendEmail({
     to: params.to,
-    subject: "Reset your WillMyWay password",
+    subject: "Reset your KeepSave password",
     html,
   });
 }

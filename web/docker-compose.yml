@@ -1,21 +1,21 @@
 services:
   postgres:
     image: postgres:16
-    container_name: willmyway-postgres-local
+    container_name: keepsave-postgres-local
     restart: unless-stopped
     environment:
-      POSTGRES_USER: willmyway
-      POSTGRES_PASSWORD: willmyway_password
-      POSTGRES_DB: willmyway_dev
+      POSTGRES_USER: keepsave
+      POSTGRES_PASSWORD: keepsave_password
+      POSTGRES_DB: keepsave_dev
     ports:
       - "5434:5432"
     volumes:
-      - willmyway_postgres_data:/var/lib/postgresql/data
+      - keepsave_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U willmyway -d willmyway_dev"]
+      test: ["CMD-SHELL", "pg_isready -U keepsave -d keepsave_dev"]
       interval: 5s
       timeout: 3s
       retries: 20
 
 volumes:
-  willmyway_postgres_data:
+  keepsave_postgres_data:

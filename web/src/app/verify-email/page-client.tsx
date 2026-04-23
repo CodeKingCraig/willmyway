@@ -70,7 +70,7 @@ export default function VerifyEmailPageClient() {
           <section className="hidden flex-col justify-between bg-gradient-to-br from-[#edf4f1] via-[#f6faf8] to-[#eef3fb] p-10 md:flex">
             <div>
               <div className="inline-flex items-center rounded-full border border-[#d8e4de] bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                WillMyWay
+                KeepSave
               </div>
 
               <h1 className="mt-8 text-4xl font-semibold leading-tight text-slate-900">
@@ -119,7 +119,7 @@ export default function VerifyEmailPageClient() {
                 </div>
 
                 <div className="mt-3 text-sm font-medium uppercase tracking-[0.2em] text-slate-400">
-                  WillMyWay
+                  KeepSave
                 </div>
               </div>
 

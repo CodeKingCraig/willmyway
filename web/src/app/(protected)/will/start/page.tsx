@@ -23,7 +23,7 @@ export default async function WillStartPage() {
       <header className="bg-gradient-to-b from-[#0b3a78] to-[#2b6cb0]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <div className="text-2xl font-semibold tracking-tight text-white">
-            WillMyWay
+            KeepSave
           </div>
 
           <nav className="flex items-center gap-8 text-sm font-medium text-white/85">

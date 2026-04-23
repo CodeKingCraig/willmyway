@@ -21,8 +21,8 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  const email = "admin@willmyway.co.za";
-  const password = "W1LLmYW@Y";
+  const email = "admin@keepsave.co.za";
+  const password = "KeepSave@2026!";
 
   const user = await prisma.user.findUnique({
     where: { email },

@@ -282,7 +282,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     Admin
                   </div>
                   <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
-                    WillMyWay Control Room
+                    KeepSave Control Room
                   </h1>
                   <div className="mt-2 text-sm text-slate-600">
                     Signed in as{" "}

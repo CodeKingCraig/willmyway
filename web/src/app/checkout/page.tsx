@@ -32,7 +32,7 @@ const BASE_PLANS: Record<BasePlanKey, BasePlan> = {
     label: "Essential",
     title: "Essential",
     subtitle:
-      "Your foundational WillMyWay plan for getting your will journey started with clarity and structure.",
+      "Your foundational KeepSave plan for getting your will journey started with clarity and structure.",
     price: "Free",
     billing: "Free",
     summaryDescription:
@@ -83,11 +83,11 @@ const BASE_PLANS: Record<BasePlanKey, BasePlan> = {
 };
 
 const CARE_ADDON = {
-  label: "WillMyWay Care",
+  label: "KeepSave Care",
   price: "R49",
   billing: "Per month",
   description:
-    "A monthly add-on for users who want a more guided, reassuring, and supported WillMyWay experience.",
+    "A monthly add-on for users who want a more guided, reassuring, and supported KeepSave experience.",
   highlights: [
     "Ongoing support positioning",
     "A more guided experience",
@@ -206,9 +206,9 @@ function buildCheckoutSummary(
     return {
       heroBadge: `${selectedBase.label} + Care`,
       heroTitle: `${selectedBase.label} with Care`,
-      heroSubtitle: `You’re preparing to continue with the ${selectedBase.label} base plan and add WillMyWay Care as a monthly support layer.`,
-      summaryTitle: `${selectedBase.label} + WillMyWay Care`,
-      summaryDescription: `${selectedBase.summaryDescription} WillMyWay Care adds a monthly support layer for a more guided and reassuring premium experience.`,
+      heroSubtitle: `You’re preparing to continue with the ${selectedBase.label} base plan and add KeepSave Care as a monthly support layer.`,
+      summaryTitle: `${selectedBase.label} + KeepSave Care`,
+      summaryDescription: `${selectedBase.summaryDescription} KeepSave Care adds a monthly support layer for a more guided and reassuring premium experience.`,
       pricingPrimary: `${selectedBase.price} + ${CARE_ADDON.price}`,
       pricingSecondary: `${selectedBase.billing} + ${CARE_ADDON.billing}`,
       highlights: [...selectedBase.highlights, ...CARE_ADDON.highlights],
@@ -235,12 +235,12 @@ function buildCheckoutSummary(
   if (careSelected) {
     return {
       heroBadge: "Care Add-on",
-      heroTitle: "WillMyWay Care add-on",
+      heroTitle: "KeepSave Care add-on",
       heroSubtitle:
-        "WillMyWay Care is a monthly add-on and is only intended to sit on top of a base plan.",
-      summaryTitle: "WillMyWay Care",
+        "KeepSave Care is a monthly add-on and is only intended to sit on top of a base plan.",
+      summaryTitle: "KeepSave Care",
       summaryDescription:
-        "Choose a base plan first, then add WillMyWay Care for ongoing support and a more guided premium experience.",
+        "Choose a base plan first, then add KeepSave Care for ongoing support and a more guided premium experience.",
       pricingPrimary: CARE_ADDON.price,
       pricingSecondary: `${CARE_ADDON.billing} add-on`,
       highlights: CARE_ADDON.highlights,
@@ -253,7 +253,7 @@ function buildCheckoutSummary(
     heroBadge: "Base Plans + Add-on",
     heroTitle: "Checkout",
     heroSubtitle:
-      "Choose your base plan first, then optionally add WillMyWay Care as a monthly support layer.",
+      "Choose your base plan first, then optionally add KeepSave Care as a monthly support layer.",
     summaryTitle: "Selected plan",
     summaryDescription:
       "Public checkout now separates your base plan from your optional Care add-on, making pricing and access clearer.",
@@ -304,7 +304,7 @@ export default async function CheckoutPage({
               />
             </div>
             <div className="text-2xl font-semibold tracking-tight">
-              WillMyWay
+              KeepSave
             </div>
           </div>
 
@@ -351,7 +351,7 @@ export default async function CheckoutPage({
 
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
                 Essential, Legacy, and Family Vault are your public base plans.
-                WillMyWay Care now sits on top as an optional monthly add-on.
+                KeepSave Care now sits on top as an optional monthly add-on.
               </p>
 
               <div className="mt-6 grid gap-4 xl:grid-cols-3">
@@ -393,7 +393,7 @@ export default async function CheckoutPage({
                       Optional add-on
                     </div>
                     <h3 className="mt-2 text-2xl font-semibold text-slate-900">
-                      WillMyWay Care
+                      KeepSave Care
                     </h3>
                     <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
                       {CARE_ADDON.description}
@@ -502,7 +502,7 @@ export default async function CheckoutPage({
           <div className="grid gap-6 md:grid-cols-3">
             <PaymentCard
               title="Paystack"
-              subtitle="Future primary payment partner for WillMyWay premium upgrades."
+              subtitle="Future primary payment partner for KeepSave premium upgrades."
               badge="Primary Partner"
             >
               <div className="flex h-14 items-center justify-center rounded-2xl bg-gradient-to-b from-[#f3e8d2] to-[#e8dcc4] text-lg font-semibold text-slate-700 ring-1 ring-[#e5d8bb] shadow-sm">
