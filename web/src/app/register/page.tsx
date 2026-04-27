@@ -65,6 +65,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,12 @@ export default function RegisterPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!acceptedLegal) {
+      setError("Please accept the Terms, Privacy Policy, and disclaimer to continue.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -224,6 +231,30 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
+                <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 text-xs leading-5 text-slate-600">
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={acceptedLegal}
+                      onChange={(e) => setAcceptedLegal(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-slate-300"
+                    />
+                    <span>
+                      I agree to the{" "}
+                      <Link href="/terms" className="font-semibold underline">
+                        Terms & Conditions
+                      </Link>{" "}
+                      and{" "}
+                      <Link href="/privacy" className="font-semibold underline">
+                        Privacy Policy
+                      </Link>
+                      , and I understand that KeepSave is not a law firm or
+                      financial services provider and does not provide legal,
+                      financial, tax, fiduciary, or estate-planning advice.
+                    </span>
+                  </label>
+                </div>
+
                 {error ? (
                   <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                     {error}
@@ -232,8 +263,8 @@ export default function RegisterPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="mt-2 inline-flex items-center justify-center rounded-2xl bg-gradient-to-b from-[#7b95bb] to-[#6d87ad] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(123,149,187,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(123,149,187,0.28)] disabled:opacity-60"
+                  disabled={loading || !acceptedLegal}
+                  className="mt-2 inline-flex items-center justify-center rounded-2xl bg-gradient-to-b from-[#7b95bb] to-[#6d87ad] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(123,149,187,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(123,149,187,0.28)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? "Creating..." : "Create Account"}
                 </button>

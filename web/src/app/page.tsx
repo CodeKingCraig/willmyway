@@ -17,34 +17,34 @@ export default function HomePage() {
       <div className="wmw-overlay" />
 
       <div className="wmw-content">
- <header className="mx-auto flex max-w-7xl items-center justify-between px-8 py-5">
-  <Link href="/" className="flex items-center shrink-0">
-    <Image
-      src="/keepsave-logo-horizontal.png"
-      alt="KeepSave"
-      width={760}
-      height={210}
-      priority
-      className="h-44 w-auto object-contain"
-    />
-  </Link>
+        <header className="mx-auto flex max-w-7xl items-center justify-between px-8 py-5">
+          <Link href="/" className="flex items-center shrink-0">
+            <Image
+              src="/keepsave-logo-horizontal.png"
+              alt="KeepSave"
+              width={760}
+              height={210}
+              priority
+              className="h-44 w-auto object-contain"
+            />
+          </Link>
 
-  <div className="flex items-center gap-4">
-    <Link
-      href="/login"
-      className="rounded-2xl bg-white/70 px-6 py-3 text-base font-medium text-slate-700 ring-1 ring-white/80 shadow-sm backdrop-blur transition hover:bg-white/80"
-    >
-      Log In
-    </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className="rounded-2xl bg-white/70 px-6 py-3 text-base font-medium text-slate-700 ring-1 ring-white/80 shadow-sm backdrop-blur transition hover:bg-white/80"
+            >
+              Log In
+            </Link>
 
-    <Link
-      href="/register"
-      className="rounded-2xl bg-[#efe5cf] px-7 py-3 text-base font-medium text-slate-700 ring-1 ring-[#eadfca] shadow-sm transition hover:bg-[#eadfca]"
-    >
-      Create My Will
-    </Link>
-  </div>
-</header>
+            <Link
+              href="/register"
+              className="rounded-2xl bg-[#efe5cf] px-7 py-3 text-base font-medium text-slate-700 ring-1 ring-[#eadfca] shadow-sm transition hover:bg-[#eadfca]"
+            >
+              Create My Will
+            </Link>
+          </div>
+        </header>
 
         <section className="mx-auto flex max-w-5xl flex-col items-center px-6 pt-12 text-center md:pt-20">
           <h1 className="max-w-4xl text-5xl font-semibold leading-tight tracking-tight text-[#7b95bb] md:text-7xl">
@@ -300,6 +300,48 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+   <div className="mx-auto max-w-6xl px-6 pb-10 text-center">
+
+  {/* Links */}
+  <div className="flex items-center justify-center gap-3 text-sm font-medium text-slate-500 flex-wrap">
+
+    <Link
+      href="/terms"
+      className="underline underline-offset-4 transition hover:text-slate-800"
+    >
+      Terms & Conditions
+    </Link>
+
+    <span className="text-slate-400">|</span>
+
+    <Link
+      href="/privacy"
+      className="underline underline-offset-4 transition hover:text-slate-800"
+    >
+      Privacy Policy
+    </Link>
+
+    <span className="text-slate-400">|</span>
+
+    <Link
+      href="/intellectual-property"
+      className="underline underline-offset-4 transition hover:text-slate-800"
+    >
+      Intellectual Property
+    </Link>
+
+  </div>
+
+  {/* Legal Footer Text */}
+  <p className="mt-4 max-w-2xl mx-auto text-xs leading-5 text-slate-400">
+    KeepSave is not a law firm or financial services provider. We provide digital
+    tools, templates, secure storage, and legacy organisation features for
+    informational and self-help purposes only. Always obtain professional advice
+    where required.
+  </p>
+
+</div>
 
         <section id="how" className="mx-auto max-w-6xl px-6 pb-20 pt-8">
           <div className="text-center">

@@ -1,7 +1,24 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set.");
+}
+
+const pool = new Pool({
+  connectionString,
+});
+
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({
+  adapter,
+});
 
 async function main() {
   const email = "admin@keepsave.co.za";
@@ -15,16 +32,16 @@ async function main() {
       passwordHash,
       role: "ADMIN",
       emailVerified: true,
-      basePlan: "FULL",
-      careActive: false,
-      careStatus: "NOT_ACTIVE",
-      careStartedAt: null,
-      careEndsAt: null,
     },
   });
 
-  console.log("PASSWORD RESET OK");
-  console.log(updated);
+  console.log("ADMIN PASSWORD RESET:");
+  console.log({
+    id: updated.id,
+    email: updated.email,
+    role: updated.role,
+    emailVerified: updated.emailVerified,
+  });
 }
 
 main()
@@ -34,4 +51,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });
